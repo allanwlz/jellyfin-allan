@@ -1,0 +1,52 @@
+services:
+  jf-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.jf-server
+    container_name: jellyfin-dev-server
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /workspace/jellyfin
+    command: >
+      bash -lc "
+      dotnet restore Jellyfin.sln &&
+      dotnet run --project Jellyfin.Server -- --nowebclient --datadir /data/config --cachedir /data/cache
+      "
+    environment:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_HOME: /tmp
+      HOME: /tmp
+      NUGET_PACKAGES: /nuget-packages
+    ports:
+      - "8096:8096"
+    volumes:
+      - ./jellyfin:/workspace/jellyfin
+      - ./.jf-dev/config:/data/config
+      - ./.jf-dev/cache:/data/cache
+      - ./.jf-dev/nuget:/nuget-packages
+
+  jf-web:
+    image: node:24
+    container_name: jellyfin-dev-web
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /workspace/jellyfin-web
+    command: >
+      bash -lc "
+      if [ ! -d node_modules ] || [ ! -f node_modules/.package-lock.hash ] || ! sha256sum -c node_modules/.package-lock.hash >/dev/null 2>&1; then
+        npm ci &&
+        sha256sum package-lock.json > node_modules/.package-lock.hash;
+      fi &&
+      npm run build:development &&
+      python3 -m http.server 8083 --bind 0.0.0.0 --directory dist
+      "
+    environment:
+      NODE_OPTIONS: "--max-old-space-size=1280"
+      DISABLE_TS_CHECKER: "1"
+      WEB_COMMIT_SHA: "dev-local"
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./jellyfin-web:/workspace/jellyfin-web
+      - ./.jf-dev/jf-web-node_modules:/workspace/jellyfin-web/node_modules
+    depends_on:
+      - jf-server
