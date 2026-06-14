@@ -41,13 +41,14 @@ start_dev_containers() {
 
 print_help() {
   cat <<'EOF'
-用法: ./dev.sh [build|restart|start|stop|help]
+用法: ./dev.sh [build|restart|start|stop|submodule|help]
 
 命令说明:
   build    重建镜像（仅构建，不启动容器）
   restart  重启已有容器中的服务（不重建镜像）
   start    启动容器（不重建镜像）
   stop     停止容器
+  submodule  按主仓库记录 commit 浅更新 submodule
   help     打印本帮助
 
 环境变量:
@@ -112,6 +113,9 @@ case "$ACTION" in
     echo "停止 Jellyfin 开发环境..."
     run_compose down --remove-orphans 2>/dev/null || docker rm -f jellyfin-dev-server jellyfin-dev-web >/dev/null 2>&1 || true
     echo "开发环境已停止。"
+    ;;
+  submodule|submodules)
+    "$ROOT_DIR/submodule-shallow-update.sh"
     ;;
   logs)
     run_compose logs -f jf-server jf-web
