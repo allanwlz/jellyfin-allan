@@ -1,10 +1,11 @@
 services:
   jf-server:
+    image: jellyfin-allan/jf-server-dev:local
     build:
       context: .
       dockerfile: Dockerfile.jf-server
     container_name: jellyfin-dev-server
-    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    user: "${LOCAL_UID:-0}:${LOCAL_GID:-0}"
     working_dir: /workspace/jellyfin
     command: >
       bash -lc "
@@ -18,17 +19,18 @@ services:
       HOME: /tmp
       NUGET_PACKAGES: /nuget-packages
     ports:
-      - "8096:8096"
+      - "${JF_SERVER_PORT:-8096}:8096"
     volumes:
-      - ./jellyfin:/workspace/jellyfin
-      - ./.jf-dev/config:/data/config
-      - ./.jf-dev/cache:/data/cache
-      - ./.jf-dev/nuget:/nuget-packages
+      - ${JF_SERVER_SRC_DIR:-./server}:/workspace/jellyfin
+      - ${JF_CONFIG_DIR:-./.jf-dev/config}:/data/config
+      - ${JF_CACHE_DIR:-./.jf-dev/cache}:/data/cache
+      - ${JF_NUGET_DIR:-./.jf-dev/nuget}:/nuget-packages
+      - ${JF_MEDIA_DIR:-./.jf-dev/media}:/media
 
   jf-web:
     image: node:24
     container_name: jellyfin-dev-web
-    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    user: "${LOCAL_UID:-0}:${LOCAL_GID:-0}"
     working_dir: /workspace/jellyfin-web
     command: >
       bash -lc "
@@ -44,9 +46,9 @@ services:
       DISABLE_TS_CHECKER: "1"
       WEB_COMMIT_SHA: "dev-local"
     ports:
-      - "8083:8083"
+      - "${JF_WEB_PORT:-8083}:8083"
     volumes:
-      - ./jellyfin-web:/workspace/jellyfin-web
-      - ./.jf-dev/jf-web-node_modules:/workspace/jellyfin-web/node_modules
+      - ${JF_WEB_SRC_DIR:-./web}:/workspace/jellyfin-web
+      - ${JF_WEB_NODE_MODULES_DIR:-./.jf-dev/jf-web-node_modules}:/workspace/jellyfin-web/node_modules
     depends_on:
       - jf-server
