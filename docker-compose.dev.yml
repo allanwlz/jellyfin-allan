@@ -42,7 +42,7 @@ services:
       python3 -m http.server 8083 --bind 0.0.0.0 --directory dist
       "
     environment:
-      NODE_OPTIONS: "--max-old-space-size=1280"
+      NODE_OPTIONS: "--max-old-space-size=3072"
       DISABLE_TS_CHECKER: "1"
       WEB_COMMIT_SHA: "dev-local"
     ports:
