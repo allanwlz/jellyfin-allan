@@ -38,6 +38,8 @@ services:
         npm ci &&
         sha256sum package-lock.json > node_modules/.package-lock.hash;
       fi &&
+      rm -rf dist &&
+      mkdir -p dist &&
       npm run build:development &&
       python3 -m http.server 8083 --bind 0.0.0.0 --directory dist
       "
